@@ -2,7 +2,6 @@
 Bitcoin Core integration/staging tree
 =====================================
 
-[![Build Status](https://travis-ci.org/xyephy/Ndovucoin.svg?branch=master)](https://travis-ci.org/xyephy/Ndovucoin)
 
 
 What is Bitcoin?
