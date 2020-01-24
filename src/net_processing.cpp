@@ -2494,8 +2494,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         TxValidationState state;
 
-        pfrom->setAskFor.erase(inv.hash);
-        mapAlreadyAskedFor.erase(inv.hash);
+        CNodeState* nodestate = State(pfrom->GetId());
+        nodestate->m_tx_download.m_tx_announced.erase(inv.hash);
+        nodestate->m_tx_download.m_tx_in_flight.erase(inv.hash);
+        EraseTxRequest(inv.hash);
 
         std::list<CTransactionRef> lRemovedTxn;
 
@@ -4035,10 +4037,13 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                     tx_process_time.emplace(next_process_time, txid);
                 }
             } else {
-                //If we're not going to ask, don't expect a response.
-                pto->setAskFor.erase(inv.hash);
+                // We have already seen this transaction, no need to download.
+                state.m_tx_download.m_tx_announced.erase(inv.hash);
+                state.m_tx_download.m_tx_in_flight.erase(inv.hash);
             }
         }
+
+
         if (!vGetData.empty())
             connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETDATA, vGetData));
 
