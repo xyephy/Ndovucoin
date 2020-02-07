@@ -312,21 +312,18 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
         std::string section;
         util::SettingsValue value = InterpretOption(section, key, val);
         Optional<unsigned int> flags = GetArgFlags('-' + key);
-        if (flags) {
-            if (!CheckValid(key, value, *flags, error)) {
-                return false;
-            }
-            // Weird behavior preserved for backwards compatibility: command
-            // line options with section prefixes are allowed but ignored. It
-            // would be better if these options triggered the Invalid parameter
-            // error below.
-            if (section.empty()) {
-                m_settings.command_line_options[key].push_back(value);
-            }
-        } else {
-            error = strprintf("Invalid parameter -%s", key);
+
+        // Unknown command line options and command line options with dot
+        // characters (which are returned from InterpretOption with nonempty
+        // section strings) are not valid.
+        if (!flags || !section.empty()) {
+            error = strprintf("Invalid parameter %s", argv[i]);
             return false;
         }
+
+        if (!CheckValid(key, value, *flags, error)) return false;
+
+        m_settings.command_line_options[key].push_back(value);
     }
 
     // we do not allow -includeconf from command line
@@ -862,6 +859,32 @@ std::vector<util::SettingsValue> ArgsManager::GetSettingsList(const std::string&
 {
     LOCK(cs_args);
     return util::GetSettingsList(m_settings, m_network, SettingName(arg), !UseDefaultSection(arg));
+}
+
+void ArgsManager::logArgsPrefix(
+    const std::string& prefix,
+    const std::string& section,
+    const std::map<std::string, std::vector<util::SettingsValue>>& args) const
+{
+    std::string section_str = section.empty() ? "" : "[" + section + "] ";
+    for (const auto& arg : args) {
+        for (const auto& value : arg.second) {
+            Optional<unsigned int> flags = GetArgFlags('-' + arg.first);
+            if (flags) {
+                std::string value_str = (*flags & SENSITIVE) ? "****" : value.write();
+                LogPrintf("%s %s%s=%s\n", prefix, section_str, arg.first, value_str);
+            }
+        }
+    }
+}
+
+void ArgsManager::LogArgs() const
+{
+    LOCK(cs_args);
+    for (const auto& section : m_settings.ro_config) {
+        logArgsPrefix("Config file arg:", section.first, section.second);
+    }
+    logArgsPrefix("Command-line arg:", "", m_settings.command_line_options);
 }
 
 bool RenameOver(fs::path src, fs::path dest)

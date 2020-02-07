@@ -15,6 +15,7 @@ import logging
 # Fuzzers known to lack a seed corpus in https://github.com/bitcoin-core/qa-assets/tree/master/fuzz_seed_corpus
 FUZZERS_MISSING_CORPORA = [
     "addr_info_deserialize",
+    "asmap",
     "base_encode_decode",
     "block",
     "block_file_info_deserialize",
@@ -39,6 +40,7 @@ FUZZERS_MISSING_CORPORA = [
     "psbt_output_deserialize",
     "pub_key_deserialize",
     "script_deserialize",
+    "strprintf",
     "sub_net_deserialize",
     "tx_in",
     "tx_in_deserialize",

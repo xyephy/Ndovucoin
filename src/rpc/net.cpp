@@ -83,6 +83,7 @@ static UniValue getpeerinfo(const JSONRPCRequest& request)
             "    \"addr\":\"host:port\",      (string) The IP address and port of the peer\n"
             "    \"addrbind\":\"ip:port\",    (string) Bind address of the connection to the peer\n"
             "    \"addrlocal\":\"ip:port\",   (string) Local address as reported by the peer\n"
+            "    \"mapped_as\":\"mapped_as\", (string) The AS in the BGP route to the peer used for diversifying peer selection\n"
             "    \"services\":\"xxxxxxxxxxxxxxxx\",   (string) The services offered\n"
             "    \"servicesnames\":[              (array) the services offered, in human-readable form\n"
             "        \"SERVICE_NAME\",         (string) the service name if it is recognised\n"
@@ -152,6 +153,9 @@ static UniValue getpeerinfo(const JSONRPCRequest& request)
             obj.pushKV("addrlocal", stats.addrLocal);
         if (stats.addrBind.IsValid())
             obj.pushKV("addrbind", stats.addrBind.ToString());
+        if (stats.m_mapped_as != 0) {
+            obj.pushKV("mapped_as", uint64_t(stats.m_mapped_as));
+        }
         obj.pushKV("services", strprintf("%016x", stats.nServices));
         obj.pushKV("servicesnames", GetServicesNames(stats.nServices));
         obj.pushKV("relaytxes", stats.fRelayTxes);
@@ -448,11 +452,11 @@ static UniValue getnetworkinfo(const JSONRPCRequest& request)
                 "Returns an object containing various state info regarding P2P networking.\n",
                 {},
                 RPCResult{
-            "{\n"
+            "{                                        (json object)\n"
             "  \"version\": xxxxx,                      (numeric) the server version\n"
-            "  \"subversion\": \"/Satoshi:x.x.x/\",     (string) the server subversion string\n"
+            "  \"subversion\" : \"str\",                  (string) the server subversion string\n"
             "  \"protocolversion\": xxxxx,              (numeric) the protocol version\n"
-            "  \"localservices\": \"xxxxxxxxxxxxxxxx\", (string) the services we offer to the network\n"
+            "  \"localservices\" : \"hex\",               (string) the services we offer to the network\n"
             "  \"localservicesnames\": [                (array) the services we offer to the network, in human-readable form\n"
             "      \"SERVICE_NAME\",                    (string) the service name\n"
             "       ...\n"
@@ -462,26 +466,26 @@ static UniValue getnetworkinfo(const JSONRPCRequest& request)
             "  \"connections\": xxxxx,                  (numeric) the number of connections\n"
             "  \"networkactive\": true|false,           (bool) whether p2p networking is enabled\n"
             "  \"networks\": [                          (array) information per network\n"
-            "  {\n"
-            "    \"name\": \"xxx\",                     (string) network (ipv4, ipv6 or onion)\n"
+            "  {                                      (json object)\n"
+            "    \"name\": \"str\",                       (string) network (ipv4, ipv6 or onion)\n"
             "    \"limited\": true|false,               (boolean) is the network limited using -onlynet?\n"
             "    \"reachable\": true|false,             (boolean) is the network reachable?\n"
-            "    \"proxy\": \"host:port\"               (string) the proxy that is used for this network, or empty if none\n"
-            "    \"proxy_randomize_credentials\": true|false,  (string) Whether randomized credentials are used\n"
-            "  }\n"
-            "  ,...\n"
+            "    \"proxy\" : \"str\"                      (string) (\"host:port\") the proxy that is used for this network, or empty if none\n"
+            "    \"proxy_randomize_credentials\" : true|false,  (bool) Whether randomized credentials are used\n"
+            "  },\n"
+            "  ...\n"
             "  ],\n"
             "  \"relayfee\": x.xxxxxxxx,                (numeric) minimum relay fee for transactions in " + CURRENCY_UNIT + "/kB\n"
             "  \"incrementalfee\": x.xxxxxxxx,          (numeric) minimum fee increment for mempool limiting or BIP 125 replacement in " + CURRENCY_UNIT + "/kB\n"
             "  \"localaddresses\": [                    (array) list of local addresses\n"
-            "  {\n"
-            "    \"address\": \"xxxx\",                 (string) network address\n"
+            "  {                                      (json object)\n"
+            "    \"address\" : \"xxxx\",                  (string) network address\n"
             "    \"port\": xxx,                         (numeric) network port\n"
             "    \"score\": xxx                         (numeric) relative score\n"
-            "  }\n"
-            "  ,...\n"
-            "  ]\n"
-            "  \"warnings\": \"...\"                    (string) any network and blockchain warnings\n"
+            "  },\n"
+            "  ...\n"
+            "  ],\n"
+            "  \"warnings\" : \"str\",                     (string) any network and blockchain warnings\n"
             "}\n"
                 },
                 RPCExamples{
