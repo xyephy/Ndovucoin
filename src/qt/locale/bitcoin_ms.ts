@@ -332,14 +332,6 @@ Alihkan fail data ke dalam tab semasa</translation>
         <translation>Tukar kata laluan untuk dompet disulitkan</translation>
     </message>
     <message>
-        <source>&amp;Debug window</source>
-        <translation>Tetingkap windows</translation>
-    </message>
-    <message>
-        <source>Open debugging and diagnostic console</source>
-        <translation>buka debug dan konsol diagnostik</translation>
-    </message>
-    <message>
         <source>&amp;Verify message...</source>
         <translation>sahkan mesej</translation>
     </message>
@@ -435,6 +427,10 @@ Alihkan fail data ke dalam tab semasa</translation>
 <context>
     <name>CoinControlDialog</name>
     <message>
+        <source>Amount</source>
+        <translation>Amount</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(tiada label)</translation>
     </message>
@@ -513,6 +509,10 @@ Alihkan fail data ke dalam tab semasa</translation>
     </context>
 <context>
     <name>QObject</name>
+    <message>
+        <source>Amount</source>
+        <translation>Amount</translation>
+    </message>
     </context>
 <context>
     <name>QRImageWidget</name>
@@ -532,6 +532,10 @@ Alihkan fail data ke dalam tab semasa</translation>
     <message>
         <source>Address</source>
         <translation>Alamat</translation>
+    </message>
+    <message>
+        <source>Amount</source>
+        <translation>Amount</translation>
     </message>
     <message>
         <source>Label</source>
@@ -568,9 +572,6 @@ Alihkan fail data ke dalam tab semasa</translation>
     <name>SendCoinsEntry</name>
     </context>
 <context>
-    <name>SendConfirmationDialog</name>
-    </context>
-<context>
     <name>ShutdownWindow</name>
     </context>
 <context>
@@ -581,6 +582,10 @@ Alihkan fail data ke dalam tab semasa</translation>
     </context>
 <context>
     <name>TransactionDesc</name>
+    <message>
+        <source>Amount</source>
+        <translation>Amount</translation>
+    </message>
     </context>
 <context>
     <name>TransactionDescDialog</name>

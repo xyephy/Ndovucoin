@@ -1,16 +1,18 @@
-// Copyright (c) 2012-2019 The Bitcoin Core developers
+// Copyright (c) 2012-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include <addrman.h>
-#include <test/util/setup_common.h>
-#include <string>
-#include <boost/test/unit_test.hpp>
-#include <util/asmap.h>
 #include <test/data/asmap.raw.h>
-
+#include <test/util/setup_common.h>
+#include <util/asmap.h>
+#include <util/string.h>
 #include <hash.h>
 #include <netbase.h>
 #include <random.h>
+
+#include <boost/test/unit_test.hpp>
+
+#include <string>
 
 class CAddrManTest : public CAddrMan
 {
@@ -266,7 +268,7 @@ BOOST_AUTO_TEST_CASE(addrman_new_collisions)
     BOOST_CHECK_EQUAL(addrman.size(), 0U);
 
     for (unsigned int i = 1; i < 18; i++) {
-        CService addr = ResolveService("250.1.1." + std::to_string(i));
+        CService addr = ResolveService("250.1.1." + ToString(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
 
         //Test: No collision in new table yet.
@@ -292,7 +294,7 @@ BOOST_AUTO_TEST_CASE(addrman_tried_collisions)
     BOOST_CHECK_EQUAL(addrman.size(), 0U);
 
     for (unsigned int i = 1; i < 80; i++) {
-        CService addr = ResolveService("250.1.1." + std::to_string(i));
+        CService addr = ResolveService("250.1.1." + ToString(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(CAddress(addr, NODE_NONE));
 
@@ -390,7 +392,7 @@ BOOST_AUTO_TEST_CASE(addrman_getaddr)
     // Test: Sanity check, GetAddr should never return anything if addrman
     //  is empty.
     BOOST_CHECK_EQUAL(addrman.size(), 0U);
-    std::vector<CAddress> vAddr1 = addrman.GetAddr();
+    std::vector<CAddress> vAddr1 = addrman.GetAddr(/* max_addresses */ 0, /* max_pct */0);
     BOOST_CHECK_EQUAL(vAddr1.size(), 0U);
 
     CAddress addr1 = CAddress(ResolveService("250.250.2.1", 8333), NODE_NONE);
@@ -413,19 +415,21 @@ BOOST_AUTO_TEST_CASE(addrman_getaddr)
     BOOST_CHECK(addrman.Add(addr4, source2));
     BOOST_CHECK(addrman.Add(addr5, source1));
 
-    // GetAddr returns 23% of addresses, 23% of 5 is 1 rounded down.
-    BOOST_CHECK_EQUAL(addrman.GetAddr().size(), 1U);
+    BOOST_CHECK_EQUAL(addrman.GetAddr(/* max_addresses */ 0, /* max_pct */ 0).size(), 5U);
+    // Net processing asks for 23% of addresses. 23% of 5 is 1 rounded down.
+    BOOST_CHECK_EQUAL(addrman.GetAddr(/* max_addresses */ 2500, /* max_pct */ 23).size(), 1U);
 
     // Test: Ensure GetAddr works with new and tried addresses.
     addrman.Good(CAddress(addr1, NODE_NONE));
     addrman.Good(CAddress(addr2, NODE_NONE));
-    BOOST_CHECK_EQUAL(addrman.GetAddr().size(), 1U);
+    BOOST_CHECK_EQUAL(addrman.GetAddr(/* max_addresses */ 0, /* max_pct */ 0).size(), 5U);
+    BOOST_CHECK_EQUAL(addrman.GetAddr(/* max_addresses */ 2500, /* max_pct */ 23).size(), 1U);
 
     // Test: Ensure GetAddr still returns 23% when addrman has many addrs.
     for (unsigned int i = 1; i < (8 * 256); i++) {
         int octet1 = i % 256;
         int octet2 = i >> 8 % 256;
-        std::string strAddr = std::to_string(octet1) + "." + std::to_string(octet2) + ".1.23";
+        std::string strAddr = ToString(octet1) + "." + ToString(octet2) + ".1.23";
         CAddress addr = CAddress(ResolveService(strAddr), NODE_NONE);
 
         // Ensure that for all addrs in addrman, isTerrible == false.
@@ -434,7 +438,7 @@ BOOST_AUTO_TEST_CASE(addrman_getaddr)
         if (i % 8 == 0)
             addrman.Good(addr);
     }
-    std::vector<CAddress> vAddr = addrman.GetAddr();
+    std::vector<CAddress> vAddr = addrman.GetAddr(/* max_addresses */ 2500, /* max_pct */ 23);
 
     size_t percent23 = (addrman.size() * 23) / 100;
     BOOST_CHECK_EQUAL(vAddr.size(), percent23);
@@ -477,8 +481,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_tried_bucket_legacy)
     std::set<int> buckets;
     for (int i = 0; i < 255; i++) {
         CAddrInfo infoi = CAddrInfo(
-            CAddress(ResolveService("250.1.1." + std::to_string(i)), NODE_NONE),
-            ResolveIP("250.1.1." + std::to_string(i)));
+            CAddress(ResolveService("250.1.1." + ToString(i)), NODE_NONE),
+            ResolveIP("250.1.1." + ToString(i)));
         int bucket = infoi.GetTriedBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -489,8 +493,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_tried_bucket_legacy)
     buckets.clear();
     for (int j = 0; j < 255; j++) {
         CAddrInfo infoj = CAddrInfo(
-            CAddress(ResolveService("250." + std::to_string(j) + ".1.1"), NODE_NONE),
-            ResolveIP("250." + std::to_string(j) + ".1.1"));
+            CAddress(ResolveService("250." + ToString(j) + ".1.1"), NODE_NONE),
+            ResolveIP("250." + ToString(j) + ".1.1"));
         int bucket = infoj.GetTriedBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -531,8 +535,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket_legacy)
     std::set<int> buckets;
     for (int i = 0; i < 255; i++) {
         CAddrInfo infoi = CAddrInfo(
-            CAddress(ResolveService("250.1.1." + std::to_string(i)), NODE_NONE),
-            ResolveIP("250.1.1." + std::to_string(i)));
+            CAddress(ResolveService("250.1.1." + ToString(i)), NODE_NONE),
+            ResolveIP("250.1.1." + ToString(i)));
         int bucket = infoi.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -544,7 +548,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket_legacy)
     for (int j = 0; j < 4 * 255; j++) {
         CAddrInfo infoj = CAddrInfo(CAddress(
                                         ResolveService(
-                                            std::to_string(250 + (j / 255)) + "." + std::to_string(j % 256) + ".1.1"), NODE_NONE),
+                                            ToString(250 + (j / 255)) + "." + ToString(j % 256) + ".1.1"), NODE_NONE),
             ResolveIP("251.4.1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
@@ -557,7 +561,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket_legacy)
     for (int p = 0; p < 255; p++) {
         CAddrInfo infoj = CAddrInfo(
             CAddress(ResolveService("250.1.1.1"), NODE_NONE),
-            ResolveIP("250." + std::to_string(p) + ".1.1"));
+            ResolveIP("250." + ToString(p) + ".1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -610,8 +614,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_tried_bucket)
     std::set<int> buckets;
     for (int j = 0; j < 255; j++) {
         CAddrInfo infoj = CAddrInfo(
-            CAddress(ResolveService("101." + std::to_string(j) + ".1.1"), NODE_NONE),
-            ResolveIP("101." + std::to_string(j) + ".1.1"));
+            CAddress(ResolveService("101." + ToString(j) + ".1.1"), NODE_NONE),
+            ResolveIP("101." + ToString(j) + ".1.1"));
         int bucket = infoj.GetTriedBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -622,8 +626,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_tried_bucket)
     buckets.clear();
     for (int j = 0; j < 255; j++) {
         CAddrInfo infoj = CAddrInfo(
-            CAddress(ResolveService("250." + std::to_string(j) + ".1.1"), NODE_NONE),
-            ResolveIP("250." + std::to_string(j) + ".1.1"));
+            CAddress(ResolveService("250." + ToString(j) + ".1.1"), NODE_NONE),
+            ResolveIP("250." + ToString(j) + ".1.1"));
         int bucket = infoj.GetTriedBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -664,8 +668,8 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
     std::set<int> buckets;
     for (int i = 0; i < 255; i++) {
         CAddrInfo infoi = CAddrInfo(
-            CAddress(ResolveService("250.1.1." + std::to_string(i)), NODE_NONE),
-            ResolveIP("250.1.1." + std::to_string(i)));
+            CAddress(ResolveService("250.1.1." + ToString(i)), NODE_NONE),
+            ResolveIP("250.1.1." + ToString(i)));
         int bucket = infoi.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -677,7 +681,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
     for (int j = 0; j < 4 * 255; j++) {
         CAddrInfo infoj = CAddrInfo(CAddress(
                                         ResolveService(
-                                            std::to_string(250 + (j / 255)) + "." + std::to_string(j % 256) + ".1.1"), NODE_NONE),
+                                            ToString(250 + (j / 255)) + "." + ToString(j % 256) + ".1.1"), NODE_NONE),
             ResolveIP("251.4.1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
@@ -690,7 +694,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
     for (int p = 0; p < 255; p++) {
         CAddrInfo infoj = CAddrInfo(
             CAddress(ResolveService("250.1.1.1"), NODE_NONE),
-            ResolveIP("101." + std::to_string(p) + ".1.1"));
+            ResolveIP("101." + ToString(p) + ".1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -702,7 +706,7 @@ BOOST_AUTO_TEST_CASE(caddrinfo_get_new_bucket)
     for (int p = 0; p < 255; p++) {
         CAddrInfo infoj = CAddrInfo(
             CAddress(ResolveService("250.1.1.1"), NODE_NONE),
-            ResolveIP("250." + std::to_string(p) + ".1.1"));
+            ResolveIP("250." + ToString(p) + ".1.1"));
         int bucket = infoj.GetNewBucket(nKey1, asmap);
         buckets.insert(bucket);
     }
@@ -791,7 +795,7 @@ BOOST_AUTO_TEST_CASE(addrman_selecttriedcollision)
     // Add twenty two addresses.
     CNetAddr source = ResolveIP("252.2.2.2");
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1."+ToString(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 
@@ -802,7 +806,7 @@ BOOST_AUTO_TEST_CASE(addrman_selecttriedcollision)
 
     // Ensure Good handles duplicates well.
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1."+ToString(i));
         addrman.Good(addr);
 
         BOOST_CHECK(addrman.size() == 22);
@@ -818,7 +822,7 @@ BOOST_AUTO_TEST_CASE(addrman_noevict)
     // Add twenty two addresses.
     CNetAddr source = ResolveIP("252.2.2.2");
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1."+ToString(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 
@@ -841,7 +845,7 @@ BOOST_AUTO_TEST_CASE(addrman_noevict)
 
     // Lets create two collisions.
     for (unsigned int i = 24; i < 33; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1."+ToString(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 
@@ -879,7 +883,7 @@ BOOST_AUTO_TEST_CASE(addrman_evictionworks)
     // Add twenty two addresses.
     CNetAddr source = ResolveIP("252.2.2.2");
     for (unsigned int i = 1; i < 23; i++) {
-        CService addr = ResolveService("250.1.1."+std::to_string(i));
+        CService addr = ResolveService("250.1.1."+ToString(i));
         BOOST_CHECK(addrman.Add(CAddress(addr, NODE_NONE), source));
         addrman.Good(addr);
 

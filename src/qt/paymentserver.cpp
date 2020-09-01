@@ -14,9 +14,9 @@
 
 #include <chainparams.h>
 #include <interfaces/node.h>
-#include <policy/policy.h>
 #include <key_io.h>
-#include <ui_interface.h>
+#include <node/ui_interface.h>
+#include <policy/policy.h>
 #include <util/system.h>
 #include <wallet/wallet.h>
 
@@ -74,7 +74,7 @@ static QSet<QString> savedPaymentRequests;
 // Warning: ipcSendCommandLine() is called early in init,
 // so don't use "Q_EMIT message()", but "QMessageBox::"!
 //
-void PaymentServer::ipcParseCommandLine(interfaces::Node& node, int argc, char* argv[])
+void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
 {
     for (int i = 1; i < argc; i++)
     {
@@ -97,11 +97,11 @@ void PaymentServer::ipcParseCommandLine(interfaces::Node& node, int argc, char* 
                 auto tempChainParams = CreateChainParams(CBaseChainParams::MAIN);
 
                 if (IsValidDestinationString(r.address.toStdString(), *tempChainParams)) {
-                    node.selectParams(CBaseChainParams::MAIN);
+                    SelectParams(CBaseChainParams::MAIN);
                 } else {
                     tempChainParams = CreateChainParams(CBaseChainParams::TESTNET);
                     if (IsValidDestinationString(r.address.toStdString(), *tempChainParams)) {
-                        node.selectParams(CBaseChainParams::TESTNET);
+                        SelectParams(CBaseChainParams::TESTNET);
                     }
                 }
             }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2019 The Bitcoin Core developers
+# Copyright (c) 2015-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test BIP66 (DER SIG).
@@ -9,7 +9,7 @@ Test that the DERSIG soft-fork activates at (regtest) height 1251.
 
 from test_framework.blocktools import create_coinbase, create_block, create_transaction
 from test_framework.messages import msg_block
-from test_framework.mininode import P2PInterface
+from test_framework.p2p import P2PInterface
 from test_framework.script import CScript
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
@@ -36,13 +36,15 @@ def unDERify(tx):
     tx.vin[0].scriptSig = CScript(newscript)
 
 
-
 class BIP66Test(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
-        self.extra_args = [['-whitelist=127.0.0.1', '-par=1']]  # Use only one script thread to get the exact log msg for testing
+        self.extra_args = [[
+            '-whitelist=noban@127.0.0.1',
+            '-par=1',  # Use only one script thread to get the exact log msg for testing
+        ]]
         self.setup_clean_chain = True
-        self.rpc_timeout = 120
+        self.rpc_timeout = 240
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

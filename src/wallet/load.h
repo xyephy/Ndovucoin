@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+class ArgsManager;
 class CScheduler;
 
 namespace interfaces {
@@ -16,15 +17,13 @@ class Chain;
 } // namespace interfaces
 
 //! Responsible for reading and validating the -wallet arguments and verifying the wallet database.
-//! This function will perform salvage on the wallet if requested, as long as only one wallet is
-//! being loaded (WalletInit::ParameterInteraction() forbids -salvagewallet, -zapwallettxes or -upgradewallet with multiwallet).
 bool VerifyWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files);
 
 //! Load wallet databases.
 bool LoadWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files);
 
 //! Complete startup of wallets.
-void StartWallets(CScheduler& scheduler);
+void StartWallets(CScheduler& scheduler, const ArgsManager& args);
 
 //! Flush all wallets in preparation for shutdown.
 void FlushWallets();
@@ -34,5 +33,11 @@ void StopWallets();
 
 //! Close all wallets.
 void UnloadWallets();
+
+//! Add wallet name to persistent configuration so it will be loaded on startup.
+bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name);
+
+//! Remove wallet name from persistent configuration so it will not be loaded on startup.
+bool RemoveWalletSetting(interfaces::Chain& chain, const std::string& wallet_name);
 
 #endif // BITCOIN_WALLET_LOAD_H

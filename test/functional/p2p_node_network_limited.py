@@ -8,14 +8,13 @@ Tests that a node configured with -prune=550 signals NODE_NETWORK_LIMITED correc
 and that it responds to getdata requests for blocks correctly:
     - send a block within 288 + 2 of the tip
     - disconnect peers who request blocks older than that."""
-from test_framework.messages import CInv, msg_getdata, msg_verack, NODE_NETWORK_LIMITED, NODE_WITNESS
-from test_framework.mininode import P2PInterface, mininode_lock
+from test_framework.messages import CInv, MSG_BLOCK, msg_getdata, msg_verack, NODE_NETWORK_LIMITED, NODE_WITNESS
+from test_framework.p2p import P2PInterface
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
     disconnect_nodes,
     connect_nodes,
-    wait_until,
 )
 
 
@@ -28,10 +27,10 @@ class P2PIgnoreInv(P2PInterface):
         self.firstAddrnServices = message.addrs[0].nServices
     def wait_for_addr(self, timeout=5):
         test_function = lambda: self.last_message.get("addr")
-        wait_until(test_function, timeout=timeout, lock=mininode_lock)
+        self.wait_until(test_function, timeout=timeout)
     def send_getdata_for_block(self, blockhash):
         getdata_request = msg_getdata()
-        getdata_request.inv.append(CInv(2, int(blockhash, 16)))
+        getdata_request.inv.append(CInv(MSG_BLOCK, int(blockhash, 16)))
         self.send_message(getdata_request)
 
 class NodeNetworkLimitedTest(BitcoinTestFramework):
@@ -42,9 +41,6 @@ class NodeNetworkLimitedTest(BitcoinTestFramework):
 
     def disconnect_all(self):
         disconnect_nodes(self.nodes[0], 1)
-        disconnect_nodes(self.nodes[1], 0)
-        disconnect_nodes(self.nodes[2], 1)
-        disconnect_nodes(self.nodes[2], 0)
         disconnect_nodes(self.nodes[0], 2)
         disconnect_nodes(self.nodes[1], 2)
 
@@ -86,7 +82,6 @@ class NodeNetworkLimitedTest(BitcoinTestFramework):
         assert_equal(node1.firstAddrnServices, expected_services)
 
         self.nodes[0].disconnect_p2ps()
-        node1.wait_for_disconnect()
 
         # connect unsynced node 2 with pruned NODE_NETWORK_LIMITED peer
         # because node 2 is in IBD and node 0 is a NODE_NETWORK_LIMITED peer, sync must not be possible
